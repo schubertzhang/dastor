@@ -1,0 +1,12 @@
+<dastor>
+  <cluster>
+    <name>DaStor Cluster</name>
+    <node_list>
+      <node>10.24.1.10:8081</node>
+      <node>10.24.1.12:8081</node>
+      <node>10.24.1.14:8081</node>
+      <node>10.24.1.16:8081</node>
+      <node>10.24.1.18:8081</node>
+    </node_list>
+  </cluster>
+</dastor>

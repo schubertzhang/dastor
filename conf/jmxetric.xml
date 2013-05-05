@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<!--
+ ~ ************************************************************************
+ ~ Copyright 2009~ (c) BIGDATA. All Rights Reserved.
+ ~ ************************************************************************
+ -->
+
+<!DOCTYPE jmxetric-config [
+   <!ELEMENT jmxetric-config (sample|ganglia|jvm)*>
+   <!ELEMENT sample (mbean)*>
+      <!ATTLIST sample delay CDATA #REQUIRED>
+      <!ATTLIST sample initialdelay CDATA "0">
+   <!ELEMENT mbean (attribute)*>
+      <!ATTLIST mbean name CDATA #REQUIRED>
+      <!ATTLIST mbean pname CDATA #REQUIRED>
+   <!ELEMENT attribute (composite*)>
+      <!ATTLIST attribute name CDATA #REQUIRED>
+      <!ATTLIST attribute type CDATA "" >
+      <!ATTLIST attribute units CDATA "" >
+      <!ATTLIST attribute pname CDATA "" >
+      <!ATTLIST attribute slope CDATA "both" >
+   <!ELEMENT composite EMPTY>
+      <!ATTLIST composite name CDATA #REQUIRED>
+      <!ATTLIST composite type CDATA "" >
+      <!ATTLIST composite units CDATA "" >
+      <!ATTLIST composite pname CDATA "" >
+      <!ATTLIST composite slope CDATA "both" >
+   <!ELEMENT ganglia EMPTY>
+      <!ATTLIST ganglia hostname CDATA #REQUIRED>
+      <!ATTLIST ganglia port CDATA #REQUIRED>
+      <!ATTLIST ganglia mode CDATA #REQUIRED>
+      <!ATTLIST ganglia wireformat31x CDATA #REQUIRED>
+   <!ELEMENT jvm EMPTY>
+      <!ATTLIST jvm process CDATA "">
+]>
+
+<jmxetric-config>
+
+    <!--
+     ~ ************************************************************************
+     ~ <jvm process="ProcessName"/>
+     ~   A name that is prefixed to the metric name before publication (so that
+     ~   metrics from different JVMs on the same host can be determined).
+     ~   If the "process" name is specified in -javaagent arguments, 
+     ~   it overrides this specification.
+     ~ 
+     ~ <sample initialdelay="0" delay="60">
+     ~   In seconds. default initialdelay=0. default delay=60.
+     ~
+     ~ Support types: 
+     ~   string|int8|uint8|int16|uint16|int32|uint32|float|double
+     ~   for a long type, use double here.
+     ~
+     ~  The composite within a attribute should implement CompositeData.
+     ~ ************************************************************************
+     -->
+    <jvm process="dastor"/>
+
+    <sample initialdelay="10" delay="60">
+    
+        <mbean name="com.bigdata.dastor.db:type=CompactionManager" pname="Compaction">
+            <attribute name="InProgressBytes" pname="InProgress" type="double" units="bytes"/>
+            <attribute name="CompactedBytes" pname="Compacted" type="double" units="bytes"/>
+            <attribute name="PendingTasks" pname="Pending" type="int32"/>
+        </mbean>
+
+        <mbean name="com.bigdata.dastor.db:type=DeputyTransfer" pname="DeputyTransfer">
+            <attribute name="DeliveredRows" pname="Delivered" type="double" units="rows"/>
+        </mbean>
+
+        <mbean name="com.bigdata.dastor.concurrent:type=ROW-READ-STAGE" pname="OTasksRead">
+            <attribute name="PendingTasks" pname="Pending" type="double"/>
+        </mbean>
+
+        <mbean name="com.bigdata.dastor.concurrent:type=ROW-MUTATION-STAGE" pname="OTasksWrite">
+            <attribute name="PendingTasks" pname="Pending" type="double"/>
+        </mbean>
+
+        <mbean name="com.bigdata.dastor.service:type=StorageProxy" pname="Service">
+            <attribute name="RecentWriteThroughput" pname="WriteThroughput" type="double" units="ops/sec"/>
+            <attribute name="RecentWriteLatencyMs" pname="WriteLatency" type="double" units="ms"/>
+            <attribute name="RecentReadThroughput" pname="ReadThroughput" type="double" units="ops/sec"/>
+            <attribute name="RecentReadLatencyMs" pname="ReadLatency" type="double" units="ms"/>
+        </mbean>
+        
+        <mbean name="com.bigdata.dastor.service:type=StorageService" pname="Storage">
+            <attribute name="Load" pname="LiveLoad" type="double" units="bytes"/>
+            <attribute name="GrossLoad" pname="GrossLoad" type="double" units="bytes"/>
+            <attribute name="CommitLogSegmentCount" pname="CommitLog_Segment" type="int32"/>
+        </mbean>
+
+        <mbean name="com.bigdata.dastor.db:type=Commitlog" pname="Storage_CommitLog">
+            <attribute name="PendingTasks" pname="Pending" type="double"/>
+        </mbean>
+
+        <mbean name="java.lang:type=Memory" pname="Sys_Memory">
+            <attribute name="HeapMemoryUsage">
+                <composite name="used" pname="HeapUsed" type="double" units="bytes"/>
+                <!-- <composite name="committed" pname="Heap_committed" type="double" units="bytes"/> -->
+            </attribute>
+        </mbean>
+
+        <mbean name="java.lang:type=Threading" pname="Sys_Threading">
+            <attribute name="ThreadCount" pname="ThreadCount" type="int32"/>
+        </mbean>
+        
+    </sample>
+    
+    <!--
+     ~ ************************************************************************
+     ~ Specify the configuration of ganglia gmond. These attributes can also
+     ~ be defined in -javaagent arguments in java commandline. e.g: 
+     ~ -javaagent:/full/path/to/jmxetric.jar=host=239.2.11.70,port=8649,
+     ~ mode=multicast,wireformat31x=true,config=/full/path/to/jmxetric.xml.
+     ~ But, if they are specified in -javaagent arguments, following attributes
+     ~ will be overrided.
+     ~ 
+     ~ hostname,port: The multicast address that is used to publish metrics
+     ~                to the ganglia gmond.
+     ~ mode:          The UDP addressing mode, either multicast or unicast
+     ~                (default multicast).
+     ~ wireformat31x: True if the ganglia v3.1.x wire format should be used
+     ~                (default false).
+     ~ ************************************************************************
+     -->
+    <ganglia hostname="239.2.11.70" port="8649" mode="multicast" wireformat31x="true"/>
+    
+</jmxetric-config>

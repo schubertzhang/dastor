@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!--
+ ~ ***************************************************************
+ ~ Copyright 2009~ (c) BIGDATA. All Rights Reserved.
+ ~ ***************************************************************
+ -->
+
+<project basedir="." default="dist" name="bigdata-dastor">
+
+    <!-- property names different from build.xml -->
+    <property name="L_version" value="0.6.8"/>
+    <property name="L_final.name" value="${ant.project.name}-${L_version}L"/>
+
+    <!-- dir locations -->
+    <property name="L_lib.dir" value="${basedir}/lib"/>
+    <property name="L_bin.dir" value="${basedir}/bin"/>
+    <property name="L_conf.dir" value="${basedir}/conf"/>
+    <property name="L_build.dir" value="${basedir}/build"/>
+    <property name="L_crypt.dir" value="${basedir}/crypt"/>    
+    <property name="L_ganglia.dir" value="${basedir}/ganglia"/>
+       
+    <property name="L_dist.dir" value="${L_build.dir}/dist-licensed"/>
+
+    <!-- 
+     ~ ************************************************************************
+     ~ call default buildfile to build java project
+     ~ ************************************************************************
+     -->
+    <target name="init">
+        <ant antfile="build.xml" target="build"/>
+        <ant antfile="build.xml" target="jar-interface"/>
+    </target>
+
+    <!-- 
+     ~ ************************************************************************
+     ~ build crypt project and encrypt dastor
+     ~ ************************************************************************
+     -->
+    <target name="build" depends="init">
+        <exec executable="chmod">
+            <arg value="+x"/>
+            <arg value="${L_crypt.dir}/cpp/make.sh"/>
+            <arg value="${L_crypt.dir}/cpp/crypt.sh"/>
+        </exec>
+        <exec executable="${L_crypt.dir}/cpp/make.sh"/>
+        <exec executable="${L_crypt.dir}/cpp/crypt.sh">
+            <arg value="${L_build.dir}"/>
+        </exec>
+        <ant antfile="build.xml" dir="${L_crypt.dir}/java" target="dist"/>
+    </target>
+
+    
+    <!-- 
+     ~ ************************************************************************
+     ~ make distributions
+     ~ ************************************************************************
+     -->
+    <target name="make-bin">
+        <!-- include lib -->
+        <copy todir="${L_dist.dir}/lib">
+            <fileset dir="${L_lib.dir}"/>
+        </copy>
+
+        <copy file="${L_crypt.dir}/cpp/gen/dastor.dar" todir="${L_dist.dir}/lib"/>
+        <copy file="${L_crypt.dir}/java/dist/dastor-release.jar" todir="${L_dist.dir}/lib"/>
+
+        <!-- include native lib -->
+        <copy file="${L_crypt.dir}/cpp/gen/libDastorRelease.so" todir="${L_dist.dir}/lib/native/Linux-amd64-64"/>
+        <copy file="${L_crypt.dir}/cpp/gen/libDastorRelease.so" todir="${L_dist.dir}/lib/native/Linux-i386-32"/>
+
+        <!-- include bin -->
+        <copy todir="${L_dist.dir}/bin">
+            <fileset dir="${L_bin.dir}"/>
+        </copy>
+
+        <!-- replace crypt bin -->
+        <delete file="${L_dist.dir}/bin/bigdata-env.sh"/>
+        <move file="${L_dist.dir}/bin/bigdata-env.sh.crypt" tofile="${L_dist.dir}/bin/bigdata-env.sh"/>
+
+        <delete file="${L_dist.dir}/bin/bigdata"/>
+        <move file="${L_dist.dir}/bin/bigdata.crypt" tofile="${L_dist.dir}/bin/bigdata"/>
+
+        <!-- copy license-server into bin -->
+        <copy todir="${L_dist.dir}/bin">
+            <fileset dir="${L_crypt.dir}/cpp/gen">
+                <include name="licensesvr"/>
+            </fileset>
+        </copy>
+
+        <!-- include conf -->
+        <copy todir="${L_dist.dir}/conf">
+            <fileset dir="${L_conf.dir}"/>
+        </copy>
+        
+        <!-- include interface -->
+        <copy todir="${L_dist.dir}/interface">
+            <fileset dir="${L_build.dir}">
+                <include name="${ant.project.name}-*-if.jar"/>
+            </fileset>
+            <fileset dir="${L_lib.dir}">
+                <include name="libthrift-*.jar"/>
+                <include name="slf4j-*.jar"/>
+                <include name="log4j-*.jar"/>
+            </fileset>
+        </copy>
+        
+        <!-- include misc -->
+        <copy todir="${L_dist.dir}/">
+            <fileset dir="${basedir}">
+                <include name="*.txt"/>
+            </fileset>
+        </copy>
+
+        <!-- make tar -->
+        <tar compression="gzip" longfile="gnu" destfile="${L_build.dir}/${L_final.name}-bin.tar.gz">
+            <!-- Everything but bin/ (default mode) -->
+            <tarfileset dir="${L_dist.dir}" prefix="${L_final.name}">
+                <include name="**"/>
+                <exclude name="bin/*"/>
+            </tarfileset>
+            <!-- Shell includes in bin/ (default mode) -->
+            <tarfileset dir="${L_dist.dir}" prefix="${L_final.name}">
+                <include name="bin/*-config.sh"/>
+                <include name="bin/*-env.sh"/>
+                <include name="bin/*-opts.sh"/>
+            </tarfileset>
+            <!-- Executable scripts in bin/ -->
+            <tarfileset dir="${L_dist.dir}" prefix="${L_final.name}" mode="755">
+                <include name="bin/*"/>
+                <exclude name="bin/*-config.sh"/>
+                <exclude name="bin/*-env.sh"/>
+                <exclude name="bin/*-opts.sh"/>
+            </tarfileset>
+        </tar>
+    </target>
+
+    <target name="make-license-server">
+        <tar compression="gzip" longfile="gnu" destfile="${L_build.dir}/${L_final.name}-license-server-bin.tar.gz">
+            <tarfileset dir="${L_crypt.dir}/cpp/gen" prefix="${L_final.name}-license-server">
+                <include name="licensesvr"/>
+            </tarfileset>
+        </tar>
+    </target>
+
+    <target name="make-webadmin">
+        <mkdir dir="${L_dist.dir}/webadmin"/>
+   
+        <untar src="${basedir}/webadmin/tomcat/apache-tomcat-6.0.20.tar.gz"
+            dest="${L_dist.dir}/webadmin" compression="gzip"/>
+
+        <copy todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/bin"
+            file="${basedir}/webadmin/script/catalina.sh.crypt"/>
+       
+        <move file="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/bin/catalina.sh.crypt" 
+            tofile="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/bin/catalina.sh"/>
+
+        <copy todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/conf"
+            file="${basedir}/webadmin/script/server.xml"/>
+
+        <mkdir dir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/dastor"/>
+
+        <copy todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/dastor"
+            file="${basedir}/webadmin/script/cluster.xml"/>
+
+        <copy todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/lib">
+            <fileset dir="${L_lib.dir}"/>
+        </copy>
+
+        <copy file="${L_crypt.dir}/java/lib/apache-dastor.jar" 
+            todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/lib" />
+
+        <copy file="${basedir}/webadmin/tomcat/catalina.jar" 
+            todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/lib" />
+
+        <copy file="${L_crypt.dir}/cpp/gen/dastor.dar" 
+            todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/dastor" />
+
+        <copy file="${L_crypt.dir}/java/dist/dastor-release.jar" 
+            todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/lib" />
+
+        <copy file="${L_crypt.dir}/cpp/gen/libDastorRelease.so" 
+            todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/lib/native/Linux-amd64-64"/>
+
+        <copy file="${L_crypt.dir}/cpp/gen/libDastorRelease.so" 
+            todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/lib/native/Linux-i386-32"/>
+
+        <delete dir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/webapps"/>
+        <mkdir dir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/webapps"/>
+        <copy todir="${L_dist.dir}/webadmin/apache-tomcat-6.0.20/webapps/ROOT">
+            <fileset dir="${basedir}/webadmin/web"/>
+        </copy>
+        
+        <!-- copy ganglia files -->
+        <copy todir="${L_dist.dir}/webadmin/ganglia">
+            <fileset dir="${L_ganglia.dir}"/>
+        </copy>
+        
+        <tar compression="gzip" longfile="gnu" destfile="${L_build.dir}/${L_final.name}-webadmin.tar.gz">
+            <tarfileset dir="${L_dist.dir}/webadmin" prefix="${L_final.name}-webadmin">
+                <include name="**"/>
+                <exclude name="apache-tomcat-6.0.20/bin/*.sh"/>
+            </tarfileset>
+            <tarfileset dir="${L_dist.dir}/webadmin" prefix="${L_final.name}-webadmin" mode="755">
+                <include name="apache-tomcat-6.0.20/bin/*.sh"/>
+            </tarfileset>
+        </tar>
+    </target>
+
+    <target name="dist" depends="build">
+        <mkdir dir="${L_dist.dir}"/>
+        <antcall target="make-bin" />
+        <antcall target="make-webadmin" />
+    </target>
+
+    <target name="clean">
+        <delete file="${L_build.dir}/${L_final.name}-bin.tar.gz"/>
+        <delete file="${L_build.dir}/${L_final.name}-license-server-bin.tar.gz"/>
+        <delete dir="${L_crypt.dir}/cpp/gen"/>
+        <delete dir="${L_crypt.dir}/cpp/bin"/>
+        <ant antfile="build.xml" dir="${L_crypt.dir}/java" target="clean"/>
+        <delete dir="${L_dist.dir}"/>
+    </target>
+
+</project>

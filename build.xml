@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!--
+ ~ ***************************************************************
+ ~ Copyright 2009~ (c) BIGDATA. All Rights Reserved.
+ ~ ***************************************************************
+ -->
+
+<project basedir="." default="jar" name="bigdata-dastor">
+    <property environment="env"/>
+    <property file="build.properties"/>
+    
+    <!-- dastor names -->
+    <property name="version" value="0.6.8"/>
+    <property name="final.name" value="${ant.project.name}-${version}"/>
+  
+    <!-- javac options -->
+    <property name="javac.version" value="1.6"/>
+    <property name="javac.source" value="${javac.version}"/>
+    <property name="javac.target" value="${javac.version}"/>
+    <property name="javac.deprecation" value="off"/>
+    <property name="javac.debug" value="off"/>
+    <property name="javac.debuglevel" value="source,lines,vars"/>
+    <property name="javac.optimize" value="on"/>
+    <property name="javac.args" value=""/>
+    <property name="javac.args.warnings" value="-Xlint:unchecked"/>
+    
+    <!-- jar options -->
+    
+    <!-- dir locations -->
+    <property name="src.dir" value="${basedir}/src"/>
+    <property name="src.java.dir" value="${src.dir}/java"/>
+    <property name="interface.dir" value="${basedir}/interface"/>
+    <property name="interface.thrift.dir" value="${interface.dir}/thrift"/>
+    <property name="interface.thrift.gen-java.dir" value="${interface.thrift.dir}/gen-java"/>
+    <property name="interface.thrift.client.dir" value="${interface.thrift.dir}/client"/>
+    
+    <property name="lib.dir" value="${basedir}/lib"/>
+    <property name="conf.dir" value="${basedir}/conf"/>
+    <property name="bin.dir" value="${basedir}/bin"/>
+    
+    <property name="build.dir" value="${basedir}/build"/>
+    <property name="build.classes.dir" value="${build.dir}/classes"/>
+    <property name="build.javadoc.dir" value="${build.dir}/javadoc"/>
+    <property name="build.interface.dir" value="${build.dir}/interface"/>
+    <property name="build.interface.classes.dir" value="${build.interface.dir}/classes"/>
+    
+    <property name="ganglia.dir" value="${basedir}/ganglia"/>
+    
+    <property name="dist.dir" value="${build.dir}/dist"/>
+    
+    <!-- classpath for dastor project -->
+    <path id="dastor.classpath">
+        <pathelement location="${build.interface.classes.dir}"/>
+        <pathelement location="${build.classes.dir}"/>
+        <pathelement location="${conf.dir}"/>
+        <fileset dir="${lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
+    
+    <!-- classpath for dastor common interface -->
+    <path id="interface.classpath">
+        <pathelement location="${build.interface.classes.dir}"/>
+        <fileset dir="${lib.dir}">
+            <include name="libthrift-*.jar"/>
+            <include name="slf4j-*.jar"/>
+            <include name="log4j-*.jar"/>
+        </fileset>
+    </path>
+    
+    <!-- init and clean the output directories. -->
+    <target name="init">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <mkdir dir="${build.classes.dir}"/>
+        <mkdir dir="${build.interface.classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+    
+    <target name="clean">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <delete dir="${build.classes.dir}"/>
+        <delete dir="${build.interface.classes.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="cleanall" depends="clean">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <delete dir="${build.dir}"/>
+    </target>
+    
+    <!--
+     ~ ************************************************************************
+     ~ Compile java class files.
+     ~ ************************************************************************
+     -->
+    
+    <!-- build dastor major packages -->
+    <target name="build" depends="build-interface">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac source="${javac.source}" target="${javac.target}"
+               debug="${javac.debug}" debuglevel="${javac.debuglevel}"
+               destdir="${build.classes.dir}">
+            <src path="${src.java.dir}"/>
+            <!-- <compilerarg line="${javac.args} ${javac.args.warnings}"/> -->
+            <classpath refid="dastor.classpath"/>
+        </javac>
+    </target>
+    
+    <!-- build dastor common interface -->
+    <target name="build-interface" depends="init">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac source="${javac.source}" target="${javac.target}"
+               debug="${javac.debug}" debuglevel="${javac.debuglevel}"
+               destdir="${build.interface.classes.dir}">
+            <src path="${interface.thrift.gen-java.dir}"/>
+        	<src path="${interface.thrift.client.dir}"/>
+            <!-- <compilerarg line="${javac.args} ${javac.args.warnings}"/> -->
+            <classpath refid="interface.classpath"/>
+        </javac>
+    </target>
+
+    <!--
+     ~ ************************************************************************
+     ~ Make jar file.
+     ~ ************************************************************************
+     -->
+    <target name="jar" depends="build">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <mkdir dir="${build.classes.dir}/META-INF"/>
+        <jar jarfile="${build.dir}/${final.name}.jar">
+            <fileset dir="${build.classes.dir}"/>
+            <fileset dir="${build.interface.classes.dir}"/>
+            <manifest>
+                <attribute name="Implementation-Title" value="DaStor"/>
+                <attribute name="Implementation-Version" value="${version}"/>
+                <attribute name="Implementation-Vendor" value="BIGDATA"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--
+     ~ ************************************************************************
+     ~ Make interface jar file.
+     ~ ************************************************************************
+     -->
+    <target name="jar-interface" depends="build-interface">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <mkdir dir="${build.interface.classes.dir}/META-INF"/>
+        <jar jarfile="${build.dir}/${final.name}-if.jar"
+            basedir="${build.interface.classes.dir}">
+            <manifest>
+                <attribute name="Implementation-Title" value="DaStor Interface"/>
+                <attribute name="Implementation-Version" value="${version}"/>
+                <attribute name="Implementation-Vendor" value="BIGDATA"/>
+            </manifest>
+        </jar>
+    </target>
+
+    
+    <!--
+     ~ ************************************************************************
+     ~ Tarballs for Distribution.
+     ~ ************************************************************************
+     -->
+    <target name="dist">
+        <echo message="${ant.project.name}: ${ant.file}"/>        
+        <antcall target="dist-bin"/>
+        <antcall target="dist-if"/>
+        <antcall target="dist-src"/>
+        <antcall target="dist-webadmin"/>
+    </target>
+    
+    <!-- dastor-bin -->
+    <target name="dist-bin" depends="jar-interface,jar">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <copy todir="${dist.dir}/lib">
+            <fileset dir="${lib.dir}"/>
+            <fileset dir="${build.dir}">
+                <include name="${final.name}.jar"/>
+            </fileset>
+        </copy>
+        
+        <copy todir="${dist.dir}/bin">
+            <fileset dir="${bin.dir}"/>
+        </copy>
+        
+        <copy todir="${dist.dir}/conf">
+            <fileset dir="${conf.dir}"/>
+        </copy>
+        
+        <copy todir="${dist.dir}/interface">
+            <fileset dir="${build.dir}">
+                <include name="${final.name}-if.jar"/>
+            </fileset>
+            <fileset dir="${lib.dir}">
+                <include name="libthrift-*.jar"/>
+                <include name="slf4j-*.jar"/>
+                <include name="log4j-*.jar"/>
+            </fileset>
+        </copy>
+        
+        <copy todir="${dist.dir}/">
+            <fileset dir="${basedir}">
+                <include name="*.txt"/>
+            </fileset>
+        </copy>
+      
+        <tar compression="gzip" longfile="gnu" destfile="${build.dir}/${final.name}-bin.tar.gz">
+            <!-- Everything but bin/ (default mode) -->
+            <tarfileset dir="${dist.dir}" prefix="${final.name}">
+                <include name="**"/>
+                <exclude name="bin/*"/>
+            </tarfileset>
+            <!-- Shell includes in bin/ (default mode) -->
+            <tarfileset dir="${dist.dir}" prefix="${final.name}">
+                <include name="bin/*-config.sh"/>
+                <include name="bin/*-env.sh"/>
+                <include name="bin/*-opts.sh"/>
+            </tarfileset>
+            <!-- Executable scripts in bin/ -->
+            <tarfileset dir="${dist.dir}" prefix="${final.name}" mode="755">
+                <include name="bin/*"/>
+                <exclude name="bin/*-config.sh"/>
+                <exclude name="bin/*-env.sh"/>
+                <exclude name="bin/*-opts.sh"/>
+            </tarfileset>
+        </tar>
+    </target>
+    
+    <!-- dastor-if -->
+    <target name="dist-if" depends="jar-interface">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <copy todir="${dist.dir}/interface">
+            <fileset dir="${build.dir}">
+                <include name="${final.name}-if.jar"/>
+            </fileset>
+            <fileset dir="${lib.dir}">
+                <include name="libthrift-*.jar"/>
+                <include name="slf4j-*.jar"/>
+                <include name="log4j-*.jar"/>
+            </fileset>
+        </copy>
+        
+        <tar compression="gzip" longfile="gnu" destfile="${build.dir}/${final.name}-if.tar.gz">
+            <tarfileset dir="${dist.dir}/interface" prefix="${final.name}-if">
+            </tarfileset>
+        </tar>
+    </target>
+    
+    <!-- dastor-src -->
+    <target name="dist-src">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <tar compression="gzip" longfile="gnu" destfile="${build.dir}/${final.name}-src.tar.gz">
+            <tarfileset dir="${basedir}" prefix="${final.name}-src">
+                <include name="**"/>
+                <exclude name="build/**"/>
+            </tarfileset>
+        </tar>
+    </target>
+    
+    <!-- dastor-webadmin -->
+    <target name="dist-webadmin" depends="jar">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <mkdir dir="${dist.dir}/webadmin"/>
+
+        <untar src="${basedir}/webadmin/tomcat/apache-tomcat-6.0.20.tar.gz" 
+            dest="${dist.dir}/webadmin" compression="gzip"/>
+
+        <copy todir="${dist.dir}/webadmin/apache-tomcat-6.0.20/bin"
+            file="${basedir}/webadmin/script/catalina.sh"/>
+
+        <copy todir="${dist.dir}/webadmin/apache-tomcat-6.0.20/conf" 
+            file="${basedir}/webadmin/script/server.xml"/>
+
+        <mkdir dir="${dist.dir}/webadmin/apache-tomcat-6.0.20/dastor"/>
+        
+        <copy todir="${dist.dir}/webadmin/apache-tomcat-6.0.20/dastor" 
+            file="${basedir}/webadmin/script/cluster.xml"/>
+
+        <copy todir="${dist.dir}/webadmin/apache-tomcat-6.0.20/lib" 
+            file="${build.dir}/${final.name}.jar"/>
+        
+        <copy todir="${dist.dir}/webadmin/apache-tomcat-6.0.20/lib">
+            <fileset dir="${lib.dir}"/>
+        </copy>
+        
+        <delete dir="${dist.dir}/webadmin/apache-tomcat-6.0.20/webapps/ROOT"/>
+        <copy todir="${dist.dir}/webadmin/apache-tomcat-6.0.20/webapps/ROOT">
+            <fileset dir="${basedir}/webadmin/web"/>
+        </copy>
+    	
+        <!-- copy ganglia files -->
+        <copy todir="${dist.dir}/webadmin/ganglia">
+            <fileset dir="${ganglia.dir}"/>
+        </copy>
+        
+    	<tar compression="gzip" longfile="gnu" destfile="${build.dir}/${final.name}-webadmin.tar.gz">
+            <tarfileset dir="${dist.dir}/webadmin" prefix="${final.name}-webadmin">
+                <include name="**"/>
+                <exclude name="apache-tomcat-6.0.20/bin/*.sh"/>
+            </tarfileset>
+            <tarfileset dir="${dist.dir}/webadmin" prefix="${final.name}-webadmin" mode="755">
+                <include name="apache-tomcat-6.0.20/bin/*.sh"/>
+            </tarfileset>
+        </tar>
+    </target>
+
+    <!--
+     ~ ************************************************************************
+     ~ Java Documentation
+     ~ ************************************************************************
+     -->
+    <target name="javadoc" depends="init">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <tstamp>
+            <format property="YEAR" pattern="yyyy"/>
+        </tstamp>
+        <javadoc destdir="${build.javadoc.dir}" author="true" version="true" use="true"
+                 windowtitle="${ant.project.name} API" classpathref="dastor.classpath"
+                 bottom="Copyright &amp;copy; ${YEAR} BIGDATA!">
+            <fileset dir="${src.java.dir}" defaultexcludes="yes">
+                <include name="**/*.java"/>
+            </fileset>
+            <fileset dir="${interface.thrift.dir}" defaultexcludes="yes">
+                <include name="**/*.java"/>
+            </fileset>
+        </javadoc>
+    </target>
+    
+</project>

@@ -1,0 +1,160 @@
+<!--
+ ~ ************************************************************************
+ ~ Copyright 2009~ (c) BIGDATA. All Rights Reserved.
+ ~ ************************************************************************
+ -->
+ 
+<Dastor>
+
+  <!-- [Mandatory]
+   ~ Unique Cluster Name for Identifier.
+   -->
+  <ClusterName>MyCluster</ClusterName>
+
+  <!-- [Mandatory]
+   ~ Currently, there are two types of BootupMode: "self" and "collaborative".
+   ~ collaborative bootup means the node collaborate with other existing 
+   ~ nodes when it join the cluster at the first time. Otherwise, this node 
+   ~ will bootup by itself.
+   ~ If this node is one of seeds, the node will also bootup by itself, 
+   ~ no care of this parameter.
+   ~ In production cluster, usually use "self" mode and assign a 
+   ~ InitBootPositionCode to each node.
+   -->
+  <BootupMode>self</BootupMode>
+  
+  <!-- [Optional]
+   ~ If BootupPositionCode is defined here, this node will use it for the 
+   ~ first time bootup, otherwise, the cluster make one balanced code for it.
+   ~ There are tow types of format:
+   ~ [1] A positive BigInteger, such as "85070591730234615865843651857942052864".
+   ~     The maximum code is 2^127.
+   ~ [2] A composition of node serial number and total number of nodes, such as
+   ~     "2:10".
+   -->
+  <InitBootPositionCode></InitBootPositionCode>
+
+  <!-- [Mandatory]
+   ~ Storage Disk Locations.
+   ~ The LogLocation and DataLocations should be different.
+   -->
+  <LogLocation>/data1/dastor/clog</LogLocation>
+  <DataLocations>
+      <Location>/data1/dastor/data</Location>
+  </DataLocations>
+  <CacheLocation>/data1/dastor/cache</CacheLocation>
+  
+  <!-- [Mandatory]
+   ~ Addresses of hosts (or ip) that are seed points when node startup 
+   ~ and join the cluster.
+   -->
+  <Seeds>
+      <Seed>localhost</Seed>
+  </Seeds>
+
+  <!-- [Optional]
+   ~ Local host address and port for inter-node communication.
+   -->
+  <InterComAddress>localhost</InterComAddress>
+  <InterComPort>9100</InterComPort>
+
+  <!-- [Optional]
+   ~ Server address and port for providing service to client.
+   -->
+  <ServerAddress>0.0.0.0</ServerAddress>
+  <ServerPort>9110</ServerPort>
+
+  <!-- [Optional]
+   ~ Index Interval. Larger value occupy less memory, but slower queries.
+   -->
+  <IndexInterval>128</IndexInterval>
+  
+  <!-- [Optional]
+   ~ Disk access mode. There are following values:
+   ~ [1] standard: access disk as normal.
+   ~ [2] mmap_index_only: use mmap to access key index, it is more fast
+   ~     than normal. recommended.
+   ~ [3] mmap: use mmap to access all data and index.
+   -->
+  <DiskAccessMode>mmap_index_only</DiskAccessMode>
+  
+  <!-- [Optional]
+   ~ Commit logging.
+   -->
+  <LogSegmentSizeInMB>128</LogSegmentSizeInMB>
+  <LogSyncMode>periodic</LogSyncMode>
+  <LogSyncPeriodInMS>1000</LogSyncPeriodInMS>
+  
+  <!-- [Optional]
+   ~ Write, Read performance.
+   -->
+  <DataFlushBufferSizeInMB>32</DataFlushBufferSizeInMB>
+  <IndexFlushBufferSizeInMB>8</IndexFlushBufferSizeInMB>
+  <CellIndexBlockSizeInKB>64</CellIndexBlockSizeInKB>
+
+  <MemtableSizeInMB>1024</MemtableSizeInMB>
+  <MemtableTTLInMinute>480</MemtableTTLInMinute>
+
+  <ConcurrentWriters>32</ConcurrentWriters>
+  <ConcurrentReaders>16</ConcurrentReaders>
+  
+  <!-- [Optional] 
+   ~ Compaction
+   -->
+  <ConcurrentCompaction>false</ConcurrentCompaction>
+  
+  <!-- [Optional] 
+   ~ Enables or disables Read Repair.
+   -->
+  <ConsistencyCheckEnabled>false</ConsistencyCheckEnabled>
+  
+  <!-- [Optional] 
+   ~ Enables Deputy Transfer.
+   -->
+  <DeputyTransferEnabled>true</DeputyTransferEnabled>
+  
+  <!-- [Optional] 
+   ~ Compression start threshold of a row size (in bytes).
+   -->
+  <CompressStartRowSize>20480</CompressStartRowSize>
+
+  <!-- [Optional] 
+   ~ Lock Memory. Refers to Linux man mlockall, etc.
+   -->
+  <TryLockMemory>true</TryLockMemory>
+  
+  
+  <!-- ================================================================= -->
+  
+  <!-- [Optional]
+   ~ Bucket collector. The time-segment (from BeginTime to EndTime) within
+   ~ a day to run collector task periodically. The format pattern should be 
+   ~ "HH:mm" or "HH:mm:ss". If EndTime <= BeginTime, it means the EndTime is 
+   ~ at the next day.
+   -->
+  <BucketCollector>
+    <BeginTime>1:00</BeginTime>
+    <EndTime>5:00</EndTime>
+  </BucketCollector>
+  
+  <!-- [Optional]
+   ~ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   ~ System used storage space.
+   ~ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   -->
+  <Spaces>
+    <!--
+     ~ For Cluster global system metadata (Optional).
+     ~ If none of this space, the BuckectCollector(CFC) will not be startup.
+     -->
+    <Space Name="ClsSystem">
+        <ReplicationFactor>1</ReplicationFactor>
+        <Bucket Name="CFC"
+                CellNameType="UTF8"
+                KeyCacheCap="10"
+                RowCacheCap="10"
+                Comment="persistent metadata for CFC"/>
+    </Space>
+  </Spaces>
+  
+</Dastor>

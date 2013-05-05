@@ -1,0 +1,40 @@
+<project name="dastor-release" default="dist" basedir=".">
+    <description>
+    </description>
+    <!-- set global properties for this build -->
+    <property name="output" value="dastor-release.jar" />
+    <property name="build" location="classes" />
+    <property name="dist" location="dist" />
+    <property name="src" location="src" />    
+
+    <target name="init">
+        <mkdir dir="${build}"/>
+    </target>
+    
+    <target name="compile" depends="init"
+            description="compile the source " >
+        <javac srcdir="${src}" debug="on" encoding="utf-8" destdir="${build}" includes="com/bigdata/dastor/**/*.java">
+        </javac>
+    </target>    
+
+    <target name="dist" depends="compile"
+            description="generate the distribution" >
+        
+        <mkdir dir="${dist}"/>
+
+        <!-- create mservices web package -->
+        <jar destfile="${dist}/${output}" compress="false">  
+            <fileset dir="${build}">  
+                <include name="**/*.class"/>  
+            </fileset>  
+        </jar>  
+        
+    </target>
+    
+    <target name="clean"
+            description="clean up" >
+        <!-- Delete the ${build} and ${dist} directory trees -->
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+    </target>
+</project>

@@ -1,0 +1,33 @@
+<web-app>
+
+    <servlet>
+        <servlet-name>ClusterServlet</servlet-name>
+        <servlet-class>com.bigdata.dastor.web.ClusterServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>DataServlet</servlet-name>
+        <servlet-class>com.bigdata.dastor.web.DataServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>NodeServlet</servlet-name>
+        <servlet-class>com.bigdata.dastor.web.NodeServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ClusterServlet</servlet-name>
+        <url-pattern>/ClusterServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>DataServlet</servlet-name>
+        <url-pattern>/DataServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>NodeServlet</servlet-name>
+        <url-pattern>/NodeServlet</url-pattern>
+    </servlet-mapping>
+
+    <welcome-file-list>
+      <welcome-file>cluster.jsp</welcome-file>
+    </welcome-file-list>
+
+</web-app>

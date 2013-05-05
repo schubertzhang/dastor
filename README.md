@@ -59,10 +59,7 @@ Bigtable's indexes are more general and can be shared equally (均摊) by differ
 There’s only one copy of indexes in Bigtable, even for multiple storage replications, since Bigtable use GFS layer for replication. (multiple copies of data, one copy of indexes)  
 
 **Local Storage Engine:** Bigtable provides better read performance, less disk seeks.  
-Bigtable vs. Cassandra ? InnoDB vs. MyISAM  
-
-**Bigtable’s write/mutation performance is lower.**  
-Commit Log: If the GFS/HDFS support s fine-configuration to let individual directory on a exclusive disk, then …  
+Bigtable vs. Cassandra ? InnoDB vs. MyISAM   
 
 **In my opinion, Bigtable ’s architecture and data model make more sense.**    
 The Cassandra project maybe a fault for big-data, and maybe a big fault to mix Dynamo and Bigtable. Cassandra is just a partial Dynamo and target to a wrong field - Big Data Storage. It is anamorphotic.  

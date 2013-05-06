@@ -62,4 +62,4 @@ There’s only one copy of indexes in Bigtable, even for multiple storage replic
 Bigtable vs. Cassandra ? InnoDB vs. MyISAM   
 
 **In my opinion, Bigtable ’s architecture and data model make more sense.**    
-The Cassandra project maybe a fault for big-data, and maybe a big fault to mix Dynamo and Bigtable. Cassandra is just a partial Dynamo and target to a wrong field - Big Data Storage. It is anamorphotic.  
+The Cassandra project maybe a fault for big-data, and maybe a fault to mix Dynamo and Bigtable. Cassandra is just a partial Dynamo and target to a wrong field - Big Data Storage.    

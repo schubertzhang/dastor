@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# *************************************************************************
+# Copyright (c) 2009~ , BIGDATA. All Rights Reserved.
+# *************************************************************************
+
+# start or stop dastor-service daemon.
+
+usage="Usage: dastor-service (start|stop|start-cluster|stop-cluster)"
+
+bin=`dirname "$0"`
+bin=`cd "$bin"; pwd`
+
+. "$bin"/bigdata-config.sh
+
+# if no args specified, show usage.
+if [ $# -lt 1 ]; then
+  echo $usage
+  exit 1
+fi
+
+# get arguments.
+startStop=$1
+shift
+
+# start|stop
+case $startStop in
+  (start)
+    "$bin"/bigdata-daemon.sh --config $BIGDATA_CONF_DIR --copts "$bin/dastor-service-opts.sh" start dastorservice
+    ;;
+    
+  (stop)
+    "$bin"/bigdata-daemon.sh --config $BIGDATA_CONF_DIR stop dastorservice
+    ;;
+  
+  (start-cluster)
+    "$bin"/bigdata-daemons.sh --config $BIGDATA_CONF_DIR --copts "$bin/dastor-service-opts.sh" start dastorservice
+    ;;
+    
+  (stop-cluster)
+    "$bin"/bigdata-daemons.sh --config $BIGDATA_CONF_DIR stop dastorservice
+    ;;
+    
+  (*)
+    echo $usage
+    exit 1
+    ;;
+esac

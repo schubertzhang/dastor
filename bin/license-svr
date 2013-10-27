@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# chkconfig: 2345 70 40
+# description: dastor license-server start/stop script.
+#
+
+bin=`dirname "$0"`
+bin=`cd "$bin"; pwd`
+
+LICENSESVR=$bin/licensesvr
+
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+
+case "$1" in
+    start)
+        echo -n "Starting bigdata dastor licensesvr. "
+        [ -f $LICENSESVR ] || exit 1
+
+        nohup $LICENSESVR >/dev/null 2>&1 &
+        RETVAL=$?
+        echo
+        ;;
+
+    stop)
+        echo -n "Shutting down bigdata dastor licensesvr. "
+        killproc licensesvr
+        RETVAL=$?
+        echo
+        ;;
+
+    restart)
+        $0 stop
+        sleep 1
+        $0 start
+        RETVAL=$?
+        ;;
+
+    status)
+        status licensesvr
+        RETVAL=$?
+        ;;
+
+    start-cluster)
+        . $bin/bigdata-config.sh
+        exec "$bin/nodes.sh" --config $BIGDATA_CONF_DIR cd "$BIGDATA_HOME" \; $bin/license-svr start
+        echo
+        ;;
+
+    stop-cluster)
+        . $bin/bigdata-config.sh
+        exec "$bin/nodes.sh" --config $BIGDATA_CONF_DIR cd "$BIGDATA_HOME" \; $bin/license-svr stop
+        echo
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|restart|status|start-cluster|stop-cluster}"
+        exit 1
+esac
+
+exit $RETVAL

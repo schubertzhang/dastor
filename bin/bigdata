@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+
+# *************************************************************************
+# Copyright (c) 2009~ , BIGDATA. All Rights Reserved.
+# *************************************************************************
+
+# The BIGDATA command script.
+#
+# Environment Variables depend:
+#
+#   JAVA_HOME            The java implementation to use. See bigdata-env.sh.
+#   BIGDATA_CLASSPATH    Extra Java CLASSPATH entries. See bigdata-env.sh.
+#   BIGDATA_HEAP_MIN     The minimum size of heap to use, with unit.
+#                        See bigdata-env.sh.
+#   BIGDATA_HEAP_MAX     The maximum size of heap to use, with unit.
+#                        See bigdata-env.sh.
+#   BIGDATA_OPTS         Extra Java runtime options.
+#   BIGDATA_CONF_DIR     Alternate conf dir. Default is $BIGDATA_HOME/conf.
+#                        See bigdata-config.sh.
+#   BIGDATA_ROOT_LOGGER  The root appender. See bigdata-daemon.sh.
+##
+
+bin=`dirname "$0"`
+bin=`cd "$bin"; pwd`
+
+# This will set BIGDATA_HOME, BIGDATA_CONF_DIR, etc.
+. "$bin"/bigdata-config.sh
+
+cygwin=false
+case "`uname`" in
+CYGWIN*) cygwin=true;;
+esac
+
+# if no args specified, show usage.
+if [ $# = 0 ]; then
+  echo "Usage: bigdata <command>"
+  echo "where <command> is one of:"
+  echo "  dastorservice       dastor service deamon."
+  echo "  dastoradmin         dastor admin tools."
+  echo "  dastoradminshell    dastor admin shell."
+  echo "  CLASSNAME           run the java class named CLASSNAME"
+  echo "Most commands print help when invoked w/o parameters."
+  exit 1
+fi
+
+# get arguments
+COMMAND=$1
+shift
+
+# Source the bigdata-env.sh. Will have JAVA_HOME, etc. defined.
+if [ -f "$bin"/bigdata-env.sh ]; then
+  . "$bin"/bigdata-env.sh
+fi
+
+# some Java parameters
+if [ "$JAVA_HOME" != "" ]; then
+  JAVA=$JAVA_HOME/bin/java
+  #echo "run java $JAVA"
+fi
+if [ "$JAVA_HOME" = "" ]; then
+  JAVA=`which java`
+  echo "run java $JAVA"
+fi
+
+JAVA_HEAP_MIN=
+JAVA_HEAP_MAX=-Xmx256m
+
+# check envvars which might override default args.
+if [ "$BIGDATA_HEAP_MIN" != "" ]; then
+  JAVA_HEAP_MIN="-Xms""$BIGDATA_HEAP_MIN"
+  #echo "run with min heapsize $JAVA_HEAP_MIN"
+fi
+
+if [ "$BIGDATA_HEAP_MAX" != "" ]; then
+  JAVA_HEAP_MAX="-Xmx""$BIGDATA_HEAP_MAX"
+  #echo "run with max heapsize $JAVA_HEAP_MAX"
+fi
+
+# so that filenames w/ spaces are handled correctly in loops below.
+IFS=
+
+# CLASSPATH initially contains $BIGDATA_CONF_DIR
+CLASSPATH="$BIGDATA_CONF_DIR"
+
+CLASSPATH=$CLASSPATH:$JAVA_HOME/lib/tools.jar
+
+# for developers, add BIGDATA classes to CLASSPATH.
+if [ -d "$BIGDATA_HOME/build/classes" ]; then
+  CLASSPATH=$CLASSPATH:$BIGDATA_HOME/build/classes
+fi
+if [ -d "$BIGDATA_HOME/build/interface/classes" ]; then
+  CLASSPATH=$CLASSPATH:$BIGDATA_HOME/build/interface/classes
+fi
+
+# for releases, add BIGDATA to CLASSPATH.
+for f in $BIGDATA_HOME/bigdata-*.jar; do
+  if [ -f $f ]; then
+    CLASSPATH=$CLASSPATH:$f;
+  fi
+done
+
+# add libs to CLASSPATH.
+for f in $BIGDATA_HOME/lib/*.jar; do
+  CLASSPATH=$CLASSPATH:$f;
+done
+
+# add user-specified CLASSPATH last.
+if [ "$BIGDATA_CLASSPATH" != "" ]; then
+  CLASSPATH=$CLASSPATH:$BIGDATA_CLASSPATH
+fi
+
+# default log directory & file.
+if [ "$BIGDATA_LOG_DIR" = "" ]; then
+  BIGDATA_LOG_DIR="$BIGDATA_HOME/logs"
+fi
+if [ "$BIGDATA_LOGFILE" = "" ]; then
+  BIGDATA_LOGFILE='bigdata.log'
+fi
+
+# restore ordinary behaviour
+unset IFS
+
+# figure out which class to run.
+if [ "$COMMAND" = "dastorservice" ] ; then
+  CLASS='com.bigdata.dastor.thrift.server.DastorMain'
+elif [ "$COMMAND" = "dastoradmin" ] ; then
+  CLASS='com.bigdata.dastor.tools.DastorAdminCli'
+elif [ "$COMMAND" = "dastoradminshell" ] ; then
+  CLASS='com.bigdata.dastor.tools.DastorAdminShell'
+else
+  CLASS=$COMMAND
+fi
+
+# cygwin path translation
+if $cygwin; then
+  CLASSPATH=`cygpath -p -w "$CLASSPATH"`
+  BIGDATA_HOME=`cygpath -w "$BIGDATA_HOME"`
+  BIGDATA_LOG_DIR=`cygpath -w "$BIGDATA_LOG_DIR"`
+  JAVA_LIBRARY_PATH=`cygpath -p -w "$JAVA_LIBRARY_PATH"`
+fi
+
+# setup 'java.library.path' for native code if necessary.
+if [ -d "$BIGDATA_HOME/build/native" -o -d "$BIGDATA_HOME/lib/native" ]; then
+  JAVA_PLATFORM=`CLASSPATH=$CLASSPATH $JAVA -Xmx32m com.bigdata.common.utils.PlatformName | sed -e "s/ /_/g"`
+  #echo $JAVA_PLATFORM
+  if [ -d "$BIGDATA_HOME/build/native" ]; then
+    if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
+      JAVA_LIBRARY_PATH=$JAVA_LIBRARY_PATH:$BIGDATA_HOME/build/native/$JAVA_PLATFORM/lib
+    else
+      JAVA_LIBRARY_PATH=$BIGDATA_HOME/build/native/$JAVA_PLATFORM/lib
+    fi
+  fi
+  
+  if [ -d "$BIGDATA_HOME/lib/native" ]; then
+    if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
+      JAVA_LIBRARY_PATH=$JAVA_LIBRARY_PATH:$BIGDATA_HOME/lib/native/$JAVA_PLATFORM
+    else
+      JAVA_LIBRARY_PATH=$BIGDATA_HOME/lib/native/$JAVA_PLATFORM
+    fi
+  fi
+fi
+
+# cygwin path translation
+if $cygwin; then
+  JAVA_LIBRARY_PATH=`cygpath -p "$JAVA_LIBRARY_PATH"`
+fi
+
+if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
+  BIGDATA_OPTS="$BIGDATA_OPTS -Djava.library.path=$JAVA_LIBRARY_PATH"
+fi
+
+BIGDATA_OPTS="$BIGDATA_OPTS -Dbigdata.home.dir=$BIGDATA_HOME"
+BIGDATA_OPTS="$BIGDATA_OPTS -Dbigdata.conf.dir=$BIGDATA_CONF_DIR"
+BIGDATA_OPTS="$BIGDATA_OPTS -Dbigdata.log.dir=$BIGDATA_LOG_DIR"
+BIGDATA_OPTS="$BIGDATA_OPTS -Dbigdata.log.file=$BIGDATA_LOGFILE"
+BIGDATA_OPTS="$BIGDATA_OPTS -Dbigdata.id.str=$BIGDATA_IDENT_STRING"
+BIGDATA_OPTS="$BIGDATA_OPTS -Dbigdata.root.logger=${BIGDATA_ROOT_LOGGER:-INFO,console}"
+
+if [ "x$BIGDATA_PIDFILE" != "x" ]; then
+  BIGDATA_OPTS="$BIGDATA_OPTS -Dbigdata.pid.file=$BIGDATA_PIDFILE"
+fi
+
+# run it.
+exec "$JAVA" $JAVA_HEAP_MIN $JAVA_HEAP_MAX $BIGDATA_OPTS -classpath "$CLASSPATH" $CLASS "$@"
